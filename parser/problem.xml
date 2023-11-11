@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<problem revision="11" short-name="example-a-plus-b" url="https://polygon.codeforces.com/p0Pwenj/mmirzayanov/example-a-plus-b">
+    <names>
+        <name language="english" value="A+B"/>
+        <name language="russian" value="A+B"/>
+    </names>
+    <statements>
+        <statement charset="UTF-8" language="english" mathjax="true" path="statements/english/problem.tex" type="application/x-tex"/>
+        <statement charset="UTF-8" language="russian" mathjax="true" path="statements/russian/problem.tex" type="application/x-tex"/>
+        <statement charset="UTF-8" language="english" mathjax="true" path="statements/.html/english/problem.html" type="text/html"/>
+        <statement charset="UTF-8" language="russian" mathjax="true" path="statements/.html/russian/problem.html" type="text/html"/>
+        <statement language="english" path="statements/.pdf/english/problem.pdf" type="application/pdf"/>
+        <statement language="russian" path="statements/.pdf/russian/problem.pdf" type="application/pdf"/>
+    </statements>
+    <judging cpu-name="Intel(R) Core(TM) i3-8100 CPU @ 3.60GHz" cpu-speed="3600" input-file="" output-file="" run-count="1">
+        <testset name="tests">
+            <time-limit>1000</time-limit>
+            <memory-limit>268435456</memory-limit>
+            <test-count>12</test-count>
+            <input-path-pattern>tests/%02d</input-path-pattern>
+            <answer-path-pattern>tests/%02d.a</answer-path-pattern>
+            <tests>
+                <test method="manual" sample="true"/>
+                <test method="manual" sample="true"/>
+                <test method="manual" sample="true"/>
+                <test cmd="echo 0 0" method="generated"/>
+                <test cmd="echo 0 1" method="generated"/>
+                <test cmd="echo 1 0" method="generated"/>
+                <test cmd="echo 1 1" method="generated"/>
+                <test cmd="echo 13 19" method="generated"/>
+                <test cmd="echo 99 99" method="generated"/>
+                <test cmd="echo 100 100" method="generated"/>
+                <test cmd="echo 29 91" method="generated"/>
+                <test cmd="echo -43 100" method="generated"/>
+            </tests>
+        </testset>
+    </judging>
+    <files>
+        <resources>
+            <file path="files/olymp.sty"/>
+            <file path="files/problem.tex"/>
+            <file path="files/statements.ftl"/>
+            <file path="files/testlib.h" type="h.g++"/>
+        </resources>
+        <executables>
+            <executable>
+                <source path="files/echo.cpp" type="cpp.g++17"/>
+                <binary path="files/echo.exe" type="exe.win32"/>
+            </executable>
+            <executable>
+                <source path="files/v.cpp" type="cpp.g++17"/>
+                <binary path="files/v.exe" type="exe.win32"/>
+            </executable>
+        </executables>
+    </files>
+    <assets>
+        <checker name="std::hcmp.cpp" type="testlib">
+            <source path="files/check.cpp" type="cpp.g++17"/>
+            <binary path="check.exe" type="exe.win32"/>
+            <copy path="check.cpp"/>
+            <testset>
+                <test-count>0</test-count>
+                <input-path-pattern>files/tests/checker-tests/%02d</input-path-pattern>
+                <output-path-pattern>files/tests/checker-tests/%02d.o</output-path-pattern>
+                <answer-path-pattern>files/tests/checker-tests/%02d.a</answer-path-pattern>
+                <tests/>
+            </testset>
+        </checker>
+        <validators>
+            <validator>
+                <source path="files/v.cpp" type="cpp.g++17"/>
+                <binary path="files/v.exe" type="exe.win32"/>
+                <testset>
+                    <test-count>2</test-count>
+                    <input-path-pattern>files/tests/validator-tests/%02d</input-path-pattern>
+                    <tests>
+                        <test verdict="invalid"/>
+                        <test verdict="invalid"/>
+                    </tests>
+                </testset>
+            </validator>
+        </validators>
+        <solutions>
+            <solution tag="main">
+                <source path="solutions/solution_mm.cpp" type="cpp.g++17"/>
+                <binary path="solutions/solution_mm.exe" type="exe.win32"/>
+            </solution>
+        </solutions>
+    </assets>
+    <properties>
+        <property name="tests-wellformed" value="true"/>
+    </properties>
+    <stresses>
+        <stress-count>0</stress-count>
+        <stress-path-pattern>stresses/%03d</stress-path-pattern>
+        <list/>
+    </stresses>
+    <tags>
+        <tag value="example"/>
+    </tags>
+</problem>
