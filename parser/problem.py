@@ -2,6 +2,8 @@ from collections import namedtuple
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+__all__ = ["Problem"]
+
 ProblemName = namedtuple("ProblemName", ["language", "value"])
 StatementNode = namedtuple("StatementNode",
                            ["charset", "language", "mathjax", "path", "type"])
