@@ -7,6 +7,9 @@ __all__ = ["Problem"]
 ProblemName = namedtuple("ProblemName", ["language", "value"])
 StatementNode = namedtuple("StatementNode",
                            ["charset", "language", "mathjax", "path", "type"])
+TestNode = namedtuple("TestNode", ["method", "arguments"])
+ProblemLimits = namedtuple("ProblemLimits", ["tl", "ml"])
+ProblemIO = namedtuple("ProblemIO", ["input", "output"])
 
 
 def _parse_names(names_node: ET.Element) -> list[ProblemName]:
@@ -19,6 +22,37 @@ def _parse_statements(statements_node: ET.Element) -> list[StatementNode]:
     return [StatementNode(**statement.attrib)
             for statement in statements_node
             if statement.attrib["type"] == "application/x-tex"]
+
+
+def _parse_tests(tests_node: ET.Element) -> list[TestNode]:
+    res = [
+        TestNode("manual", i + 1)
+        if tests_node[i].attrib["method"] == "manual"
+        else TestNode(tests_node[i].attrib["method"], tests_node[i].attrib["cmd"])
+        for i in range(len(tests_node))
+    ]
+    return res
+
+
+def _parse_test_set(test_set_node: ET.Element) -> tuple[ProblemLimits, list[TestNode]]:
+    kwargs = {}
+    tests = []
+    for el in test_set_node:
+        if el.tag == "time-limit":
+            kwargs["tl"] = el.text
+        if el.tag == "memory-limit":
+            kwargs["ml"] = el.text
+        if el.tag == "tests":
+            tests = _parse_tests(el)
+    return ProblemLimits(**kwargs), tests
+
+
+def _parse_judging(judging_node: ET.Element) -> tuple[ProblemIO, ProblemLimits, list[TestNode]]:
+    for el in judging_node:
+        if el.tag == "testset":
+            limits, tests = _parse_test_set(el)
+            return (ProblemIO(judging_node.attrib["input-file"], judging_node.attrib["output-file"]),
+                    limits, tests)
 
 
 class Problem:
@@ -34,8 +68,17 @@ class Problem:
                 self.names = _parse_names(el)
             if el.tag == "statements":
                 self.statements = _parse_statements(el)
+            if el.tag == "judging":
+                self.io, self.limits, self.tests = _parse_judging(el)
 
 
-tree = ET.parse('problem.xml')
+if __name__ == '__main__':
+
+    p = Problem(Path('problem.xml'))
+    print(p.names)
+    print(p.statements)
+    print(p.io)
+    print(p.limits)
+    print(p.tests)
 
 
