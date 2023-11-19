@@ -21,7 +21,7 @@ class Statement:
         self.input = self._parse_file("input.tex")
         self.output = self._parse_file("output.tex")
         self.notes = self._parse_file("notes.tex")
-        self.tutorial = self._parse_file("notes.tex")
+        self.tutorial = self._parse_file("tutorial.tex")
 
     def _parse_file(self, name: str) -> str:
         f_name = self.lang_path / name
