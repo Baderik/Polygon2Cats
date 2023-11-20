@@ -105,7 +105,7 @@ class Problem:
 
 
 if __name__ == '__main__':
-    p = Problem(Path('problem.xml'))
+    p = Problem(Path('../polygon/example-a-plus-b-11'))
     print(p.names)
     print(p.statements)
     print(p.io)

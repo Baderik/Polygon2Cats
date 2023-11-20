@@ -1,4 +1,3 @@
-# TODO: Move Generator Tag to Checker tag
 # TODO: Add code of files for cats tags
 # TODO: Add processing points
 # TODO: Add int to name of solutions: rejected-1
@@ -12,6 +11,7 @@ from parser.example import copy_examples
 
 problem_path = Path("polygon/art-lesson/")
 cats_path = Path("cats/artLesson")
+cats_path.mkdir(parents=True, exist_ok=True)
 
 
 def import_testlib(parent: etree.ElementTree, t: str):
@@ -21,6 +21,7 @@ def import_testlib(parent: etree.ElementTree, t: str):
 
 
 def add_solution(problem_node: etree.ElementTree, sol: Solution, sol_dir: str = "solutions"):
+    (cats_path / sol_dir).mkdir(exist_ok=True)
     copy(problem_path / sol.path, cats_path / sol_dir)
     etree.SubElement(problem_node, "Solution", {
         "name": sol.tag,
@@ -29,15 +30,23 @@ def add_solution(problem_node: etree.ElementTree, sol: Solution, sol_dir: str = 
 
 
 def add_generators(problem_node: etree.ElementTree, gens, gen_dir: str = "generators"):
+    (cats_path / gen_dir).mkdir(exist_ok=True)
+    checker_index = -1
+    if gens:
+        for i in range(len(problem_node)):
+            if problem_node[i].tag == "Checker":
+                checker_index = i + 1
     for f in (problem_path / "files").iterdir():
         if f.suffix == ".exe" or not f.suffix:
             continue
         if f.stem in gens:
             copy(f, cats_path / gen_dir)
-            etree.SubElement(problem_node, "Generator", {
+            g = etree.Element("Generator", {
                 "name": f.stem,
                 "src": (Path(gen_dir) / f.name).as_posix()
             })
+            problem_node.insert(checker_index, g)
+            checker_index += 1
 
 def add_checker(problem_node: etree.ElementTree, check: Checker):
     kwargs = {}
@@ -59,8 +68,20 @@ def gen_rank(n: int) -> str:
 
 
 def copy_tests(tests_dir: str = "tests"):
+    (cats_path / tests_dir).mkdir(exist_ok=True)
     for t in (problem_path / "tests").iterdir():
         copy(t, cats_path / tests_dir / f"{t.stem}.in" )
+
+
+def cats_lang(language: str) -> str:
+    return language[:2]
+
+
+def add_tex(parent_node: etree.ElementTree, txt: str) -> None:
+    for line in txt.splitlines():
+        if line:
+            etree.SubElement(parent_node, "p").text = line
+
 
 # problem_path = Path("polygon/example-a-plus-b-11/")
 
@@ -71,11 +92,14 @@ cats = etree.Element('CATS', {"version": "1.11"})
 problem = etree.SubElement(cats, "Problem",
                            {
                                "title": p.names[0].value,
-                               "lang": ",".join(map(lambda el: el.language, p.names)),
+                               "lang": ",".join(map(lambda el: cats_lang(el.language), p.names)),
                                "tlimit": str(int(p.limits.tl) // 1000),
                                "mlimit": str(int(p.limits.ml) // 1024 // 1024) + "M",
                                "inputFile": p.io.input if p.io.input else "*STDIN",
-                               "outputFile": p.io.output if p.io.output else "*STDOUT"
+                               "outputFile": p.io.output if p.io.output else "*STDOUT",
+                               "saveInputPrefix": "50B",
+                               "saveOutputPrefix": "50B",
+                               "saveAnswerPrefix": "50B"
                            })
 
 samples_count = 0
@@ -83,21 +107,21 @@ for s in p.statements:
     st = Statement(problem_path / "statement-sections" / s.language, encoding=s.charset)
     samples_count = st.count
     if st.legend:
-        st_node = etree.SubElement(problem, "ProblemStatement", {"cats_if": f"lang={s.language}"})
-        for el in st.legend.splitlines():
-            etree.SubElement(st_node, "p").text = el
+        st_node = etree.SubElement(problem, "ProblemStatement",
+                                   {"cats_if": f"lang={cats_lang(s.language)}"})
+        add_tex(st_node, st.legend)
     if st.input:
-        in_f = etree.SubElement(problem, "InputFormat", {"cats_if": f"lang={s.language}"})
-        for el in st.input.splitlines():
-            etree.SubElement(in_f, "p").text = el
+        in_f = etree.SubElement(problem, "InputFormat",
+                                {"cats_if": f"lang={cats_lang(s.language)}"})
+        add_tex(in_f, st.input)
     if st.output:
-        out_f = etree.SubElement(problem, "OutputFormat", {"cats_if": f"lang={s.language}"})
-        for el in st.output.splitlines():
-            etree.SubElement(out_f, "p").text = el
+        out_f = etree.SubElement(problem, "OutputFormat",
+                                 {"cats_if": f"lang={cats_lang(s.language)}"})
+        add_tex(out_f, st.output)
     if st.tutorial:
-        exp = etree.SubElement(problem, "Explanation", {"cats_if": f"lang={s.language}"})
-        for el in st.output.splitlines():
-            etree.SubElement(exp, "p").text = el
+        exp = etree.SubElement(problem, "Explanation",
+                               {"cats_if": f"lang={cats_lang(s.language)}"})
+        add_tex(exp, st.tutorial)
 
 
 copy_examples(samples_count, problem_path / "statement-sections" / p.names[0].language, cats_path)
@@ -135,5 +159,5 @@ for t_i in range(len(p.tests)):
 add_generators(problem, generators)
 
 cats.append(etree.Comment("This packet auto-generated by Baderik v0.1"))
-with open(cats_path / "task.xml", "w", encoding="utf-8") as out:
-    print(etree.tostring(cats, pretty_print=True, encoding="unicode"), file=out)
+with open(cats_path / "task.xml", "wb") as out:
+    out.write(etree.tostring(cats, pretty_print=True, xml_declaration=True, encoding="UTF-8"))

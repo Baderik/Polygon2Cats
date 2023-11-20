@@ -5,6 +5,7 @@ __all__ = ["copy_examples"]
 
 
 def copy_examples(count: int, from_path: Path, problem_path: Path, example_dir: Path = "samples"):
+    (problem_path / example_dir).mkdir(exist_ok=True)
     for i in range(1, count + 1):
         if i < 10:
             i = f"0{i}"
