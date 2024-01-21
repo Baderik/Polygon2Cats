@@ -2,7 +2,7 @@ from pathlib import Path
 
 __all__ = ["Statement"]
 
-_service_files = ("name.tex", "legend.tex", "input.tex", "output.tex", "notes.tex", "tutorial.tex")
+_service_files = ("name.tex", "legend.tex", "input.tex", "output.tex", "notes.tex", "tutorial.tex", "scoring.tex", "tree.mp")
 
 
 class Statement:
@@ -32,7 +32,8 @@ class Statement:
     def _calc_example_count(self):
         self.count = 0
         for f in self.lang_path.iterdir():
-            if f.name not in _service_files:
+            # TODO: Fix it
+            if f.name not in _service_files and "png" not in f.name:
                 self.count += 1
         self.count //= 2
 

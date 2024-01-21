@@ -11,7 +11,7 @@ TestNode = namedtuple("TestNode", ["method", "arguments"])
 ProblemLimits = namedtuple("ProblemLimits", ["tl", "ml"])
 ProblemIO = namedtuple("ProblemIO", ["input", "output"])
 Checker = namedtuple("Checker", ["is_testlib", "path", "type"])
-Solution = namedtuple("Solution", ["tag", "path", "type"])
+Solution = namedtuple("Solution", ["tag", "path", "type", "note"], defaults=(None,))
 
 
 def _parse_names(names_node: ET.Element) -> list[ProblemName]:
@@ -69,6 +69,7 @@ def _parse_solutions(solutions_node: ET.Element) -> list[Solution]:
         if el.tag == "solution":
             for sub_el in el:
                 if sub_el.tag == "source":
+                    # print(el.attrib, sub_el.attrib)
                     res.append(Solution(**el.attrib, **sub_el.attrib))
                     break
     return res
