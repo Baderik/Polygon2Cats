@@ -1,6 +1,5 @@
 # TODO: Add code of files for cats tags
 # TODO: Add processing points
-# TODO: Add int to name of solutions: rejected-1
 from lxml import etree
 from pathlib import Path
 from shutil import copy
@@ -9,7 +8,7 @@ from parser.problem import Problem, Solution, Checker
 from parser.statement import Statement
 from parser.example import copy_examples
 
-dir_name = "divide-by-divisors"
+dir_name = "preposterous-order"
 problem_path = Path("polygon/") / dir_name
 cats_path = Path("cats/") / dir_name
 cats_path.mkdir(parents=True, exist_ok=True)
@@ -49,14 +48,14 @@ def add_generators(problem_node: etree.ElementTree, gens, gen_dir: str = "genera
             problem_node.insert(checker_index, g)
             checker_index += 1
 
+
 def add_checker(problem_node: etree.ElementTree, check: Checker):
-    kwargs = {}
+    kwargs = {"name": "check", "src": Path(check.path).name}
     if check.is_testlib:
         kwargs["style"] = "testlib"
         import_testlib(problem, "checker")
-    kwargs["src"] = Path(check.path).name
     copy(problem_path / check.path, cats_path)
-    kwargs["name"] = "check"
+
     etree.SubElement(problem_node, "Checker", kwargs)
 
 
@@ -84,8 +83,6 @@ def add_tex(parent_node: etree.ElementTree, txt: str) -> None:
         if line:
             etree.SubElement(parent_node, "p").text = line
 
-
-# problem_path = Path("polygon/example-a-plus-b-11/")
 
 p = Problem(problem_path / "problem.xml")
 sol = "main"
@@ -135,8 +132,30 @@ if samples_count:
 
 import_testlib(problem, "generator")
 add_checker(problem, p.checker)
-for s in p.solutions:
-    add_solution(problem, s)
+
+
+def add_solutions(problem_node: etree.Element, solutions: list[Solution], sol_dir: str = "solutions"):
+    (cats_path / sol_dir).mkdir(exist_ok=True)
+    tags = {}
+    for sol in solutions:
+        copy(problem_path / sol.path, cats_path / sol_dir)
+        tags.get(sol.tag, []).append(sol)
+
+    for tag, sols in tags.items():
+        if len(sols) == 1:
+            etree.SubElement(problem_node, "Solution", {
+                "name": tag,
+                "src": (Path(sol_dir) / Path(sols[0].path).name).as_posix()
+            })
+        else:
+            for i in range(len(sols)):
+                etree.SubElement(problem_node, "Solution", {
+                    "name": f"{tag}-{i + 1}",
+                    "src": (Path(sol_dir) / Path(sols[i].path).name).as_posix()
+                })
+
+
+add_solutions(problem, p.solutions)
 
 
 copy_tests()
