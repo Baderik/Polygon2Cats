@@ -7,7 +7,8 @@ __all__ = ["Problem"]
 ProblemName = namedtuple("ProblemName", ["language", "value"])
 StatementNode = namedtuple("StatementNode",
                            ["charset", "language", "mathjax", "path", "type"])
-TestNode = namedtuple("TestNode", ["method", "arguments"])
+TestNode = namedtuple("TestNode", ["method", "arguments", "points", "group", "sample"], defaults=(None, None, False))
+GroupNode = namedtuple("GroupNode", ["name", "feedback_policy", "points_policy", "dependencies"], defaults=("",))
 ProblemLimits = namedtuple("ProblemLimits", ["tl", "ml"])
 ProblemIO = namedtuple("ProblemIO", ["input", "output"])
 Checker = namedtuple("Checker", ["is_testlib", "path", "type"])
@@ -36,9 +37,11 @@ def _parse_tests(tests_node: ET.Element) -> list[TestNode]:
     return res
 
 
-def _parse_test_set(test_set_node: ET.Element) -> tuple[ProblemLimits, list[TestNode]]:
+def _parse_test_set(test_set_node: ET.Element) \
+        -> tuple[ProblemLimits, list[TestNode], list[GroupNode]]:
     kwargs = {}
     tests = []
+    groups = []
     for el in test_set_node:
         if el.tag == "time-limit":
             kwargs["tl"] = el.text
@@ -46,15 +49,18 @@ def _parse_test_set(test_set_node: ET.Element) -> tuple[ProblemLimits, list[Test
             kwargs["ml"] = el.text
         if el.tag == "tests":
             tests = _parse_tests(el)
-    return ProblemLimits(**kwargs), tests
+        if el.tag == "groups":
+            groups = _parse_groups(el)
+    return ProblemLimits(**kwargs), tests, groups
 
 
-def _parse_judging(judging_node: ET.Element) -> tuple[ProblemIO, ProblemLimits, list[TestNode]]:
+def _parse_judging(judging_node: ET.Element) \
+        -> tuple[ProblemIO, ProblemLimits, list[TestNode], list[GroupNode]]:
     for el in judging_node:
         if el.tag == "testset":
-            limits, tests = _parse_test_set(el)
+            limits, tests, groups = _parse_test_set(el)
             return (ProblemIO(judging_node.attrib["input-file"], judging_node.attrib["output-file"]),
-                    limits, tests)
+                    limits, tests, groups)
 
 
 def _parse_checker(checker_node: ET.Element) -> Checker:
@@ -69,7 +75,6 @@ def _parse_solutions(solutions_node: ET.Element) -> list[Solution]:
         if el.tag == "solution":
             for sub_el in el:
                 if sub_el.tag == "source":
-                    # print(el.attrib, sub_el.attrib)
                     res.append(Solution(**el.attrib, **sub_el.attrib))
                     break
     return res
@@ -86,6 +91,20 @@ def _parse_assets(assets_node: ET.Element) -> tuple[Checker, list[Solution]]:
     return checker, solutions
 
 
+def _parse_groups(groups_node: ET.Element) -> list[GroupNode]:
+    groups = []
+    for el in groups_node:
+        if el.tag == "group":
+            for sub_el in el:
+                if sub_el.tag == "dependencies":
+                    dep = ",".join(ssub_el.attrib["group"]
+                                   for ssub_el in el if ssub_el.tag == "dependency")
+                    groups.append(
+                        GroupNode(el.attrib["name"], el.attrib["feedback-policy"],
+                                  el.attrib["points-policy"], dependencies=dep))
+    return groups
+
+
 class Problem:
     def __init__(self, problem_path: Path):
         if not problem_path.is_file() or not problem_path.with_suffix(".xml"):
@@ -100,13 +119,13 @@ class Problem:
             if el.tag == "statements":
                 self.statements = _parse_statements(el)
             if el.tag == "judging":
-                self.io, self.limits, self.tests = _parse_judging(el)
+                self.io, self.limits, self.tests, self.groups = _parse_judging(el)
             if el.tag == "assets":
                 self.checker, self.solutions = _parse_assets(el)
 
 
 if __name__ == '__main__':
-    p = Problem(Path('../polygon/example-a-plus-b-11'))
+    p = Problem(Path('../polygon/strange-matrix/problem.xml'))
     print(p.names)
     print(p.statements)
     print(p.io)
@@ -114,5 +133,6 @@ if __name__ == '__main__':
     print(p.tests)
     print(p.checker)
     print(p.solutions)
+    print(p.groups)
 
 

@@ -8,7 +8,7 @@ from parser.problem import Problem, Solution, Checker
 from parser.statement import Statement
 from parser.example import copy_examples
 
-dir_name = "preposterous-order"
+dir_name = "strange-matrix"
 problem_path = Path("polygon/") / dir_name
 cats_path = Path("cats/") / dir_name
 cats_path.mkdir(parents=True, exist_ok=True)
@@ -139,7 +139,8 @@ def add_solutions(problem_node: etree.Element, solutions: list[Solution], sol_di
     tags = {}
     for sol in solutions:
         copy(problem_path / sol.path, cats_path / sol_dir)
-        tags.get(sol.tag, []).append(sol)
+        tags[sol.tag] = tags.get(sol.tag, [])
+        tags[sol.tag].append(sol)
 
     for tag, sols in tags.items():
         if len(sols) == 1:
@@ -167,6 +168,7 @@ if manual_count:
     manual_tests_in = etree.SubElement(manual_tests, "In", {"src": "tests/%0n.in"})
 
 generators = []
+groups = {}
 for t_i in range(len(p.tests)):
     if p.tests[t_i].method == "manual":
         continue
