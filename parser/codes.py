@@ -1,0 +1,18 @@
+compilers = {
+    "c.gcc": 105,
+    "cpp.g++": 102,
+    "cpp.gcc": 102,
+    "cpp.ms": 103,
+    "csharp.ms": 402,
+    "go": 404,
+    "java": 401,
+    "kotlin": 406,
+    "pascal.dpr": 204,
+    "pascal.fpc": 202,
+    "perl": 501,
+    "php": 505,
+    "python": 502,
+    "pypy": 510,
+    "ruby": 504,
+    "rust": 120,
+}
