@@ -1,6 +1,8 @@
 from pathlib import Path
+from json import load
+from dataclasses import dataclass
 
-__all__ = ["Statement"]
+__all__ = ["Statement", "ProblemProperties"]
 
 _service_files = ("name.tex", "legend.tex", "input.tex", "output.tex", "notes.tex", "tutorial.tex", "scoring.tex", "tree.mp")
 
@@ -38,8 +40,41 @@ class Statement:
         self.count //= 2
 
 
+@dataclass
+class SampleTest:
+    input: str
+    output: str
+    inputFile: str
+    outputFile: str
+
+
+@dataclass
+class ProblemProperties:
+    name: str
+    language: str
+    scoring: str | None
+    authorLogin: str
+    authorName: str
+    timeLimit: int
+    memoryLimit: int
+    legend: str
+    input: str
+    output: str
+    inputFile: str
+    outputFile: str
+    notes: str | None
+    interaction: str | None
+    tutorial: str | None
+    sampleTests: list[SampleTest]
+
+
+def parse_properties(properties_path: Path, encoding) -> ProblemProperties:
+    with open(properties_path, encoding=encoding) as prop_file:
+        return ProblemProperties(**load(prop_file))
+
+
 if __name__ == '__main__':
-    s = Statement(Path("../polygon/example-a-plus-b-11/statement-sections/english/"), "UTF-8")
+    s = Statement(Path("../polygon/domino/statement-sections/russian/"), "UTF-8")
     print(s.legend)
     print(s.input)
     print(s.output)
@@ -47,3 +82,5 @@ if __name__ == '__main__':
     print(s.lang_path)
     print(s.notes)
     print(s.tutorial)
+    props = parse_properties(Path("../polygon/domino/statements/russian/problem-properties.json"), "UTF-8")
+    print(props)

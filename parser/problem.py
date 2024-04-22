@@ -25,6 +25,8 @@ TestFormats = namedtuple("TestFormats",
 Checker = namedtuple("Checker", ["is_testlib", "path", "type"])
 Solution = namedtuple("Solution", ["tag", "path", "type", "note"], defaults=(None,))
 
+FileNode = namedtuple("File", ["path", "section", "type"], defaults=(None,))
+
 
 def _pre_attrib(kwargs: dict) -> dict:
     """Preprocessing attributes of xml nodes: replace - to _"""
@@ -131,14 +133,45 @@ def _parse_solutions(solutions_node: ET.Element) -> list[Solution]:
 
 def _parse_assets(assets_node: ET.Element) -> tuple[Checker, list[Solution]]:
     """Parse <assets> node from problem.xml"""
-    checker = None
-    solutions = None
+    checker = solutions = None
+
     for el in assets_node:
         if el.tag == "checker":
             checker = _parse_checker(el)
         if el.tag == "solutions":
             solutions = _parse_solutions(el)
     return checker, solutions
+
+
+def _parse_resources(resources_node: ET.Element) -> list[FileNode]:
+    """Parse files/<resources> node from problem.xml"""
+    return [FileNode(**_pre_attrib(el.attrib), section="resources") for el in resources_node]
+
+
+def _parse_execute(executable_node: ET.Element) -> FileNode:
+    """Parse files/executables/<executable> node from problem.xml"""
+    for el in executable_node:
+        if el.tag == "source":
+            return FileNode(**_pre_attrib(el.attrib), section="executables")
+
+
+def _parse_executables(executables_node: ET.Element) -> list[FileNode]:
+    """Parse files/<executables> node from problem.xml"""
+    return [_parse_execute(el) for el in executables_node]
+
+
+def _parse_files(files_node: ET.Element) -> tuple[list[FileNode], list[FileNode]]:
+    """Parse <files> node from problem.xml"""
+    resources = executables = None
+
+    for el in files_node:
+        match el.tag:
+            case "resources":
+                resources = _parse_resources(el)
+            case "executables":
+                executables = _parse_executables(el)
+
+    return resources, executables
 
 
 class Problem:
@@ -150,14 +183,17 @@ class Problem:
 
     def _parse(self):
         for el in self.tree.getroot():
-            if el.tag == "names":
-                self.names = _parse_titles(el)
-            if el.tag == "statements":
-                self.statements = _parse_statements(el)
-            if el.tag == "judging":
-                self.io, self.limits, self.tests = _parse_judging(el)
-            if el.tag == "assets":
-                self.checker, self.solutions = _parse_assets(el)
+            match el.tag:
+                case "names":
+                    self.names = _parse_titles(el)
+                case "statements":
+                    self.statements = _parse_statements(el)
+                case "judging":
+                    self.io, self.limits, self.tests = _parse_judging(el)
+                case "assets":
+                    self.checker, self.solutions = _parse_assets(el)
+                case "files":
+                    self.resources, self.executables = _parse_files(el)
 
 
 if __name__ == '__main__':
@@ -171,3 +207,5 @@ if __name__ == '__main__':
     print(p.solutions)
     print(p.tests.tests)
     print(p.tests.groups)
+    print(p.resources)
+    print(p.executables)
