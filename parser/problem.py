@@ -2,7 +2,7 @@ from collections import namedtuple
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-__all__ = ["Problem"]
+__all__ = ["Problem", "TitleNode"]
 
 
 TitleNode = namedtuple("TitleNode", ["language", "value"])

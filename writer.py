@@ -104,7 +104,7 @@ problem = etree.SubElement(cats, "Problem",
 samples_count = 0
 for s in p.statements:
     st = Statement(problem_path / "statement-sections" / s.language, encoding=s.charset)
-    samples_count = st.count
+    samples_count = st.example_count
     if st.legend:
         st_node = etree.SubElement(problem, "ProblemStatement",
                                    {"cats_if": f"lang={cats_lang(s.language)}"})
