@@ -1,11 +1,9 @@
 from pathlib import Path
 from json import load
-from dataclasses import dataclass
+from pydantic import BaseModel
 import re
 
-__all__ = ["Statement", "StatementProperties", "parse_properties"]
-
-_service_files = ("name.tex", "legend.tex", "input.tex", "output.tex", "notes.tex", "tutorial.tex", "scoring.tex", "tree.mp")
+__all__ = ["Statement", "StatementProperties", "from_file_properties"]
 
 
 class Statement:
@@ -31,6 +29,8 @@ class Statement:
         if f_name.exists():
             with open(f_name, encoding=self.encoding) as inp:
                 return inp.read()
+        else:
+            print("WARNING: Statement section file does not exist:")
 
     def _calc_example_count(self):
         self.example_count = 0
@@ -39,19 +39,16 @@ class Statement:
                 self.example_count += 1
 
 
-@dataclass
-class SampleTest:
+class SampleTest(BaseModel):
     input: str
     output: str
     inputFile: str
     outputFile: str
 
 
-@dataclass
-class StatementProperties:
+class StatementProperties(BaseModel):
     name: str
     language: str
-    scoring: str | None
     authorLogin: str
     authorName: str
     timeLimit: int
@@ -61,25 +58,33 @@ class StatementProperties:
     output: str
     inputFile: str
     outputFile: str
+    scoring: str | None
     notes: str | None
     interaction: str | None
     tutorial: str | None
     sampleTests: list[SampleTest]
 
 
-def parse_properties(properties_path: Path, encoding) -> StatementProperties:
+def from_file_properties(properties_path: Path, encoding) -> StatementProperties:
     with open(properties_path, encoding=encoding) as prop_file:
         return StatementProperties(**load(prop_file))
 
 
 if __name__ == '__main__':
-    s = Statement(Path("../polygon/domino/statement-sections/russian/"), "UTF-8")
-    print(s.legend)
-    print(s.input)
-    print(s.output)
-    print(s.example_count)
-    print(s.lang_path)
-    print(s.notes)
-    print(s.tutorial)
-    props = parse_properties(Path("../polygon/domino/statements/russian/problem-properties.json"), "UTF-8")
-    print(props)
+    t = input("Enter type of statement: s (statement-sections) | P (problem-properties)")
+    match t.lower():
+        case "s":
+            s = Statement(Path(input("Enter path to polygon statement-sections/language dir\n")),
+                          "UTF-8")
+            print(s.name)
+            print(s.legend)
+            print(s.input)
+            print(s.output)
+            print(s.example_count)
+            print(s.lang_path)
+            print(s.notes)
+            print(s.tutorial)
+        case _:
+            p = from_file_properties(Path(input("Enter path to polygon problem-properties.json\n")),
+                                     "UTF-8")
+            print(p)

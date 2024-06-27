@@ -90,8 +90,8 @@ sol = "main"
 cats = etree.Element('CATS', {"version": "1.11"})
 problem = etree.SubElement(cats, "Problem",
                            {
-                               "title": p.names[0].value,
-                               "lang": ",".join(map(lambda el: cats_lang(el.language), p.names)),
+                               "title": p._names[0].value,
+                               "lang": ",".join(map(lambda el: cats_lang(el.language), p._names)),
                                "tlimit": str(int(p.limits.time_limit) // 1000),
                                "mlimit": str(int(p.limits.memory_limit) // 1024 // 1024) + "M",
                                "inputFile": p.io.input if p.io.input_file else "*STDIN",
@@ -102,7 +102,7 @@ problem = etree.SubElement(cats, "Problem",
                            })
 
 samples_count = 0
-for s in p.statements:
+for s in p._statements:
     st = Statement(problem_path / "statement-sections" / s.language, encoding=s.charset)
     samples_count = st.example_count
     if st.legend:
@@ -123,7 +123,7 @@ for s in p.statements:
         add_tex(exp, st.tutorial)
 
 
-copy_examples(samples_count, problem_path / "statement-sections" / p.names[0].language, cats_path)
+copy_examples(samples_count, problem_path / "statement-sections" / p._names[0].language, cats_path)
 if samples_count:
     samp = etree.SubElement(problem, "Sample", {"rank": gen_rank(samples_count)})
     etree.SubElement(samp, "SampleIn", {"src": "samples/example.%0n"})
@@ -131,7 +131,7 @@ if samples_count:
 
 
 import_testlib(problem, "generator")
-add_checker(problem, p.checker)
+add_checker(problem, p._checker)
 
 
 def add_solutions(problem_node: etree.Element, solutions: list[Solution], sol_dir: str = "solutions"):
@@ -156,7 +156,7 @@ def add_solutions(problem_node: etree.Element, solutions: list[Solution], sol_di
                 })
 
 
-add_solutions(problem, p.solutions)
+add_solutions(problem, p._solutions)
 
 
 copy_tests()
