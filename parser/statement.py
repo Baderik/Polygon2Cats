@@ -4,11 +4,12 @@ from pydantic import BaseModel
 import re
 
 from parser.models import *
+from core import Logged
 
 __all__ = ["Statement", "StatementProperties", "from_file_properties", "parse_statement_resources"]
 
 
-class Statement:
+class Statement(Logged):
     def __init__(self, lang_dir: Path, encoding: str):
         if not lang_dir.is_dir():
             raise ValueError("Path of statement dir must be dir, but found:", lang_dir)
@@ -32,7 +33,7 @@ class Statement:
             with open(f_name, encoding=self.encoding) as inp:
                 return inp.read()
         else:
-            print("WARNING: Statement section file does not exist:")
+            self.logger.warning(f"Statement section file does not exist: {f_name}")
 
     def _calc_example_count(self):
         self.example_count = 0

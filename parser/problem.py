@@ -2,11 +2,13 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from parser.models import *
+from core import *
 
 __all__ = ["Problem"]
 
 
-class _Parser:
+# @logged
+class _Parser(Logged):
     @classmethod
     def names(cls, names_node: ET.Element) -> list[NameTag]:
         """Parse <names> node from problem.xml"""
@@ -33,12 +35,13 @@ class _Parser:
         groups = []
         for el in groups_node:
             if el.tag != "group":
-                print(f"WARNING: IN <groups> tag found <{el.tag}>, not group")
+                cls.logger.warning(f"In <groups> tag found <{el.tag}>, must be <group>")
                 continue
             dep = []
             for sub_el in el:
                 if sub_el.tag != "dependencies":
-                    print(f"WARNING: IN <group> tag found <{el.tag}>, not dependencies")
+                    cls.logger.warning(f"In <group> tag found <{el.tag}>, must be <dependencies>")
+                    continue
                 dep = list(map(lambda g: g.attrib["group"], sub_el))
             groups.append(GroupTag(**el.attrib, dependencies=dep))
         return groups
@@ -157,11 +160,14 @@ class _Parser:
         return [Tag(**el.attrib) for el in tags_node]
 
 
-class Problem:
+# @logged
+class Problem(Logged):
     def __init__(self, problem_path: Path):
+        super().__init__()
         if not problem_path.is_file() or not problem_path.with_suffix(".xml"):
             raise ValueError("Path of problem.xml must be .xml file, but found:", problem_path)
         self.tree = ET.parse(problem_path)
+        self.logger.debug(f"problem.xml is parsed ({problem_path})")
         self._problem = self.tree.getroot()
         self._path = problem_path if type(problem_path) is Path else Path(problem_path)
         self._names = self._statements = self._tutorials = self._judging = self._resources =\
@@ -197,54 +203,69 @@ class Problem:
     @property
     def names(self) -> list[NameTag]:
         if self._names is None:
-            print("WARNING: The <name> tag was not found in problem.xml")
-            return []
-        return self._names
+            self.logger.warning("The <NAMES> tag was not found in problem.xml")
+        elif len(self._names) == 0:
+            self.logger.warning("The names/<NAME> tags were not found in problem.xml")
+        else:
+            return self._names
+        return []
 
     @property
     def statements(self) -> list[StatementTag]:
         if self._statements is None:
-            print("WARNING: The <statement> tag was not found in problem.xml")
-            return []
-        return self._statements
+            self.logger.warning("The <STATEMENTS> tag was not found in problem.xml")
+        elif len(self._statements) == 0:
+            self.logger.warning("The statements/<STATEMENT> tags were not found in problem.xml")
+        else:
+            return self._statements
+        return []
 
     @property
     def tutorials(self) -> list[TutorialTag]:
         if self._tutorials is None:
-            print("WARNING: The <tutorial> tag was not found in problem.xml")
-            return []
-        return self._tutorials
+            self.logger.warning("The <TUTORIALS> tag was not found in problem.xml")
+        elif len(self._tutorials) == 0:
+            self.logger.warning("The tutorials/<TUTORIAL> tags were not found in problem.xml")
+        else:
+            return self._tutorials
+        return []
 
     @property
     def judging(self) -> JudgingTag:
         if self._judging is None:
-            print("WARNING: The <judging> tag was not found in problem.xml")
+            self.logger.warning("The <JUDGING> tag was not found in problem.xml")
         return self._judging
 
     @property
     def resources(self) -> list[ResourceTag]:
         if self._resources is None:
-            print("WARNING: The resources/<file> tag was not found in problem.xml")
-            return []
-        return self._resources
+            self.logger.warning("The <RESOURCES> tag was not found in problem.xml")
+        elif len(self._resources) == 0:
+            self.logger.warning("The resources/<FILE> tags were not found in problem.xml")
+        else:
+            return self._resources
+        return []
 
     @property
     def executables(self) -> list[ExecutableTag]:
         if self._executables is None:
-            print("WARNING: The <executable> tag was not found in problem.xml")
-            return []
-        return self._executables
+            self.logger.warning("The <EXECUTABLES> tag was not found in problem.xml")
+        elif len(self._executables) == 0:
+            self.logger.warning("The executables/<EXECUTABLE> tags were not found in problem.xml")
+        else:
+            return self._executables
+        return []
 
     @property
     def checker(self) -> CheckerTag:
         if self._checker is None:
-            print("WARNING: The checker/<source> tag was not found in problem.xml")
+            self.logger.warning("The assets/<CHECKER> tag was not found in problem.xml")
         return self._checker
 
     @property
     def interactor(self) -> InteractorTag:
         if self._interactor is None:
-            print("WARNING: The interactor/<source> tag was not found in problem.xml")
+            self.logger.warning("The assets/<INTERACTOR> tag was not found in problem.xml")
         return self._interactor
 
     @property
@@ -254,23 +275,34 @@ class Problem:
     @property
     def validators(self) -> list[ValidatorTag]:
         if self._validators is None:
-            print("WARNING: The validator/<source> tag was not found in problem.xml")
-            return []
-        return self._validators
+            self.logger.warning("The assets/<VALIDATORS> tag was not found in problem.xml")
+        elif len(self._validators) == 0:
+            self.logger.warning("The assets/validators/<VALIDATOR> "
+                                "tags were not found in problem.xml")
+        else:
+            return self._validators
+        return []
 
     @property
     def solutions(self) -> list[SolutionTag]:
         if self._solutions is None:
-            print("WARNING: The solutions/<source> tag was not found in problem.xml")
-            return []
-        return self._solutions
+            self.logger.warning("The assets/<SOLUTIONS> tag was not found in problem.xml")
+        elif len(self._solutions) == 0:
+            self.logger.warning("The assets/solutions/<SOLUTION> "
+                                "tags were not found in problem.xml")
+        else:
+            return self._solutions
+        return []
 
     @property
     def tags(self) -> list[Tag]:
         if self._tags is None:
-            print("WARNING: The <tag> tag was not found in problem.xml")
-            return []
-        return self._tags
+            self.logger.warning("The <TAGS> tag was not found in problem.xml")
+        elif len(self._tags) == 0:
+            self.logger.warning("The tags/<TAG> tags were not found in problem.xml")
+        else:
+            return self._tags
+        return []
 
     @property
     def path(self):

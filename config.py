@@ -82,3 +82,6 @@ class Properties(Enum):
     saveInputPrefix = "255B"
     saveOutputPrefix = "255B"
     saveAnswerPrefix = "255B"
+
+
+# logger = logging.getLogger("Polygon2Cats")
