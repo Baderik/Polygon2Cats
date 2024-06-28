@@ -8,6 +8,7 @@ from parser.services import get_properties
 
 from writer.xml import CatsXml
 from writer.utils import *
+from writer.files import Copier
 
 if len(argv) > 1:
     file_path = Path(argv[1])
@@ -22,8 +23,8 @@ was_unpacked = False
 original_file_path = file_path
 if file_path.is_file() and file_path.suffix == ".zip":
     print("LOG: Package is archive")
-    file_path = cfg.main.unpack_dir / file_path.stem
-    unpack_archive(original_file_path, extract_dir=cfg.main.unpack_dir / file_path.name)
+    file_path = cfg.unpack_dir / file_path.stem
+    unpack_archive(original_file_path, extract_dir=cfg.unpack_dir / file_path.name)
     was_unpacked = True
     print("LOG: Archive unpacked")
 
@@ -43,6 +44,15 @@ main_properties = choose_properties(statements_properties)
 cats.set_title(problem, main_properties)
 print("LOG: Set attributes for <Problem> tag of cats.xml")
 
+cop = Copier(file_path, cfg.result_dir / problem.problem.attrib["short-name"])
+print("LOG: Created |Directory| for cats package")
+
+# TODO: Add multy language resources
+resources = cop.statement_resources(main_properties)
+print("LOG: Copied |resource| files to cats package")
+cats.add_resources(resources)
+print("LOG: Added |Picture| and |Attachment| tags to cats.xml")
+
 print("LOG: Started adding |problem-properties.json| to cats.xml")
 st_count = len(statements_properties)
 for i, st_properties in enumerate(statements_properties):
@@ -52,39 +62,56 @@ for i, st_properties in enumerate(statements_properties):
 
 print("LOG: Finished adding |problem-properties.json| to cats.xml")
 
-cats.add_samples_by_properties(main_properties)
+cop = Copier(file_path, cfg.result_dir / problem.problem.attrib["short-name"])
+print("LOG: Created |Directory| for cats package")
+
+inp_path, ans_path = cop.samples(main_properties)
+print("LOG: Copied |sample| files to cats package")
+cats.add_samples_by_properties(main_properties,
+                               use_file=True, local_in=inp_path, local_ans=ans_path)
 print("LOG: Added |samples| for cats.xml from |problem-properties.json|")
 
 cats.import_testlib()
 print("LOG: Added import tags for use |testlib| to cats.xml")
 
+cop.checker(problem.checker)
+print("LOG: Copied |checker| file to cats package")
 cats.set_checker(problem.checker)
 print("LOG: Added |Checker| tag to cats.xml")
 
+cop.solutions(problem.solutions)
 print("LOG: Started adding |Solution| tag to cats.xml")
 cats.add_solutions(problem.solutions)
 print("LOG: Finished adding |Solution| tag to cats.xml")
 
 if problem.is_interactive:
+    print("LOG: Package is interactive")
+    cop.interactor(problem.interactor)
+    print("LOG: Copied |interactor| file to cats package")
     cats.use_interactor(problem.interactor)
     print("LOG: Added |Interactor| and |Run| tag to cats.xml")
 
-cats.add_resources(problem.resources)
-print("LOG: Added resources files")
+# TODO: Need copy module files
+# print("LOG: Copied |module| files to cats package")
+cats.add_modules(problem.resources)
+print("LOG: Added modules files")
 
-print("LOG: Started adding |Generator| tag to cats.xml")
+print("LOG: Started adding |Generator| to cats.xml")
 main_testset = choose_testset(problem.judging.test_sets)
 generators = get_generators(problem.executables, main_testset.tests)
-
+cop.generators(generators)
+print("LOG: Copied |generator| files to cats package")
 for generator in generators:
     cats.add_generator(generator)
 print("LOG: Finished adding |Generator| tag to cats.xml")
 
-print("LOG: Started adding |Test| tag to cats.xml")
+print("LOG: Started adding |Test| to cats.xml")
+tests_path = cop.tests()
+print("LOG: Copied |test| files to cats package")
 cats.add_all_test_out(main_testset)
 for i, test in enumerate(main_testset.tests):
-    cats.add_test_in(i + 1, test)
-print("LOG: Finished adding |Test| tag to cats.xml")
+    cats.add_test_in(i + 1, test, tests_path)
+print("LOG: Finished adding |Test| to cats.xml")
 
 if main_testset.groups:
     groups = get_groups_tests(main_testset)
@@ -101,6 +128,6 @@ if was_unpacked:
     rmtree(file_path)
     print("LOG: Archive dir deleted")
 
-result_path = cfg.main.result_dir / cfg.main.result_xml
+result_path = cop.result / cfg.result_xml
 cats.save(result_path)
 print(f"INFO: Finished processing polygon package. Save to {result_path}")

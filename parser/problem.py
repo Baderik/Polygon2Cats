@@ -162,6 +162,7 @@ class Problem:
         if not problem_path.is_file() or not problem_path.with_suffix(".xml"):
             raise ValueError("Path of problem.xml must be .xml file, but found:", problem_path)
         self.tree = ET.parse(problem_path)
+        self._problem = self.tree.getroot()
         self._path = problem_path if type(problem_path) is Path else Path(problem_path)
         self._names = self._statements = self._tutorials = self._judging = self._resources =\
             self._executables = self._checker = self._interactor = self._validators =\
@@ -169,7 +170,7 @@ class Problem:
         self._parse()
 
     def _parse(self):
-        for el in self.tree.getroot():
+        for el in self.problem:
             match el.tag:
                 case "names":
                     self._names = _Parser.names(el)
@@ -186,6 +187,12 @@ class Problem:
                      self._validators, self._solutions) = _Parser.assets(el)
                 case "tags":
                     self._tags = _Parser.tags(el)
+
+    @property
+    def problem(self) -> ET.Element:
+        if self._problem.tag != "problem":
+            raise ValueError("Root tag is not Problem")
+        return self._problem
 
     @property
     def names(self) -> list[NameTag]:

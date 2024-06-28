@@ -1,4 +1,10 @@
 from enum import Enum
+from pathlib import Path
+
+result_dir = Path("cats/")
+result_dir.mkdir(parents=True, exist_ok=True)
+unpack_dir = Path("polygon/")
+result_xml = Path("problem.xml")
 
 
 class Compiler(Enum):
@@ -63,7 +69,7 @@ compilers4languages = {
 }
 
 
-xml_tags = {"notes": {"ru": "Примечание", "en": "Notes"},
+headings = {"notes": {"ru": "Примечание", "en": "Notes"},
             "interaction": {"ru": "Протокол взаимодействия", "en": "Interaction"}}
 
 

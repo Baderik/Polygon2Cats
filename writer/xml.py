@@ -67,7 +67,7 @@ class CatsBaseXml:
         return etree.SubElement(self.problem, "Import", attrib)
 
     def _add_file(self, tag: str, name: str, path: Path,
-                  compiler: "cfg.cats.Compiler" = None, **kwargs) -> "_Element":
+                  compiler: "cfg.Compiler" = None, **kwargs) -> "_Element":
         if compiler:
             kwargs["de_code"] = str(compiler.value)
         kwargs["name"] = name
@@ -111,9 +111,9 @@ class CatsXml(CatsBaseXml):
             author=properties.authorName,
             inputFile=problem.judging.input_file,
             outputFile=problem.judging.output_file,
-            saveInputPrefix=cfg.cats.Properties.saveInputPrefix.value,
-            saveOutputPrefix=cfg.cats.Properties.saveOutputPrefix.value,
-            saveAnswerPrefix=cfg.cats.Properties.saveAnswerPrefix.value
+            saveInputPrefix=cfg.Properties.saveInputPrefix.value,
+            saveOutputPrefix=cfg.Properties.saveOutputPrefix.value,
+            saveAnswerPrefix=cfg.Properties.saveAnswerPrefix.value
         )
 
     def add_txt_by_properties(self, properties: "StatementProperties") -> None:
@@ -129,25 +129,25 @@ class CatsXml(CatsBaseXml):
         if interaction := proc_text(properties.interaction):
             if len(output) == 0:
                 output = self._add_text_tag("OutputFormat", [], lang)
-            _add_txt_block(output, cfg.cats.xml_tags["interaction"][lang], interaction)
+            _add_txt_block(output, cfg.headings["interaction"][lang], interaction)
         if notes := proc_text(properties.notes):
             if len(output) == 0:
                 output = self._add_text_tag("OutputFormat", [], lang)
-            _add_txt_block(output, cfg.cats.xml_tags["notes"][lang], notes)
+            _add_txt_block(output, cfg.headings["notes"][lang], notes)
         if tutorial := proc_text(properties.tutorial):
             self._add_text_tag("Explanation", tutorial, lang)
 
-    def add_samples_by_properties(self, properties: "StatementProperties",
-                                  use_file: bool = True) -> None:
-        def _with_file(samples_count: int, local_path: Path = Path("samples"), lang_if: str = None):
+    def add_samples_by_properties(self, properties: "StatementProperties", use_file: bool = False,
+                                  local_in: Path = None, local_ans: Path = None) -> None:
+        def _with_file(samples_count: int, lang_if: str = None):
             attrib = {"rank": cats_rank(samples_count)}
             if lang_if:
                 attrib["cats_if"] = f"lang={lang_if}"
             samp = etree.SubElement(self.problem, "Sample", attrib)
             etree.SubElement(samp, "SampleIn",
-                             {"src": (local_path / "example.%0n").as_posix()})
+                             {"src": local_in.as_posix()})
             etree.SubElement(samp, "SampleOut",
-                             {"src": (local_path / "example.%0n.a").as_posix()})
+                             {"src": local_ans.as_posix()})
 
         def _with_txt(rank: int, inp: str, out: str, lang_if: str = None):
             attrib = {"rank": str(rank)}
@@ -170,7 +170,7 @@ class CatsXml(CatsBaseXml):
         self._add_import("std.testlib.h.last", "checker")
 
     def set_checker(self, checker: "CheckerTag",
-                    name: str = cfg.cats.Names.checker.value, **kwargs) -> None:
+                    name: str = cfg.Names.checker.value, **kwargs) -> None:
         """Set Checker for problem."""
         self.checker = self._add_file("Checker", name,
                                       checker.path,
@@ -178,7 +178,7 @@ class CatsXml(CatsBaseXml):
                                       style="testlib", **kwargs)
 
     def use_interactor(self, interactor: "InteractorTag",
-                       name: str = cfg.cats.Names.interactor.value, **kwargs) -> None:
+                       name: str = cfg.Names.interactor.value, **kwargs) -> None:
         """Use Interactor for problem."""
         self.run = self._set_run("interactive")
         self.interactor = self._add_file("Interactor", name,
@@ -228,7 +228,7 @@ class CatsXml(CatsBaseXml):
         """Add Test Set tag to cats xml."""
         return self._add_test(out_kwargs={"use": "main"}, rank=cats_rank(test_set.test_count))
 
-    def add_test_in(self, rank: int, test: "TestTag", test_path: Path = Path("tests")) -> "_Element":
+    def add_test_in(self, rank: int, test: "TestTag", test_path: Path) -> "_Element":
         """Add Test and Test/<In> to cats xml."""
         match test.method:
             case "generated":
@@ -265,15 +265,22 @@ class CatsXml(CatsBaseXml):
                                      encoding="UTF-8"))
 
     def add_resources(self, resources: list["ResourceTag"]) -> None:
+        for res in resources:
+            if res.is_picture:
+                self.add_picture(res)
+            else:
+                self.add_attachment(res)
+
+    def add_modules(self, modules: list["ResourceTag"]) -> None:
         services = {"files/olymp.sty", "files/problem.tex", "files/statements.ftl",
                     "files/testlib.h", "files/tutorial.tex"}
-        for resource in resources:
-            if resource.path in services:
+        for module in modules:
+            if module.path.as_posix() in services:
                 continue
-            if resource.is_picture:
-                self.add_picture(resource)
-            else:
-                self.add_attachment(resource)
+
+            self._add_file("Module", module.path.name,
+                           module.path,
+                           compiler=module.type)
 
 
 def _add_text(root: "_Element", data: list[str], tag: str = "p") -> None:

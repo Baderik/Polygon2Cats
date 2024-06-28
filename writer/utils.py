@@ -1,10 +1,7 @@
 import typing
 from pathlib import Path
-from shutil import copy
 
-import config as cfg
-
-__all__ = ["cats_rank", "names2languages", "copy_samples_files", "copy_tests_files", "proc_text", "cats_lang", "polygon2cats_compiler", "choose_name", "choose_properties", "choose_testset", "file_name", "str_format2cats", "get_generators", "get_groups_tests"]
+__all__ = ["cats_rank", "names2languages", "proc_text", "cats_lang", "choose_name", "choose_properties", "choose_testset", "file_name", "str_format2cats", "get_generators", "get_groups_tests"]
 
 if typing.TYPE_CHECKING:
     from parser.models import *
@@ -35,25 +32,6 @@ def names2languages(names: list["NameTag"]) -> str:
     return ",".join(map(one, names))
 
 
-def copy_samples_files(count: int, source_root: Path, result_root: Path,
-                       samples_dir_name: Path = "samples", lang: str = "russian"):
-    """Copy examples files from Polygon package to Result dir."""
-    (result_root / samples_dir_name).mkdir(exist_ok=True)
-    for i in range(1, count + 1):
-        copy(source_root / "statements" / lang / ("example.%02d" % i),
-             result_root / samples_dir_name)
-        copy(source_root / "statements" / lang / ("example.%02d.a" % i),
-             result_root / samples_dir_name)
-
-
-def copy_tests_files(source_root: Path, result_root: Path, test_dir_name: str = "tests",
-                     file_name_format: str = "%s.in"):
-    """Copy tests files from Polygon package to Result dir."""
-    (result_root / test_dir_name).mkdir(exist_ok=True)
-    for test_path in (source_root / "tests").iterdir():
-        copy(test_path, result_root / test_dir_name / test_path.name)
-
-
 def proc_text(txt: str) -> list[str]:
     """Process text from Polygon Tex format to list of paragraphs."""
     if not txt:
@@ -69,11 +47,6 @@ def proc_text(txt: str) -> list[str]:
             res.append(temp)
             temp = ""
     return res
-
-
-def polygon2cats_compiler(file_type: str) -> cfg.cats.Compiler:
-    """Return Compiler by polygon file type."""
-    return cfg.cats.compilers4languages[file_type]
 
 
 def choose_name(names: list["NameTag"]) -> "NameTag":

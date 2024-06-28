@@ -3,7 +3,9 @@ from json import load
 from pydantic import BaseModel
 import re
 
-__all__ = ["Statement", "StatementProperties", "from_file_properties"]
+from parser.models import *
+
+__all__ = ["Statement", "StatementProperties", "from_file_properties", "parse_statement_resources"]
 
 
 class Statement:
@@ -63,11 +65,25 @@ class StatementProperties(BaseModel):
     interaction: str | None
     tutorial: str | None
     sampleTests: list[SampleTest]
+    path: Path | None
 
 
-def from_file_properties(properties_path: Path, encoding) -> StatementProperties:
-    with open(properties_path, encoding=encoding) as prop_file:
-        return StatementProperties(**load(prop_file))
+def from_file_properties(local_properties_path: Path, encoding: str, root_dir: Path = Path("")) -> StatementProperties:
+    with open(root_dir / local_properties_path, encoding=encoding) as prop_file:
+        return StatementProperties(**load(prop_file), path=local_properties_path)
+
+
+def parse_statement_resources(local_statement_dir: Path, samples_count: int,
+                              root_dir: Path = Path("")) -> list["ResourceTag"]:
+    _services = {"problem-properties.json", "problem.tex", "input.tex", "interaction.tex", "legend.tex", "name.tex", "notes.tex", "output.tex", "tutorial.tex", "scoring.tex"}
+
+    for i in range(1, samples_count + 1):
+        _services.add("example.%02d" % i)
+        _services.add("example.%02d.a" % i)
+
+    return [ResourceTag(path=local_statement_dir / file.name)
+            for file in (root_dir / local_statement_dir).iterdir()
+            if file.name not in _services]
 
 
 if __name__ == '__main__':

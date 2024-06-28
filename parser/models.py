@@ -94,17 +94,17 @@ class JudgingTag(PolygonTag):
 
 class SourceTag(PolygonTag):
     path: Path
-    type: cfg.cats.Compiler | None
+    type: cfg.Compiler | None
 
     @field_validator("type", mode="before")
-    def choose_compiler(cls, value: str) -> cfg.cats.Compiler:
-        if compiler := cfg.cats.compilers4languages.get(value.lower()):
+    def choose_compiler(cls, value: str) -> cfg.Compiler:
+        if compiler := cfg.compilers4languages.get(value.lower()):
             return compiler
         print(f"WARNING: compiler for type <{value}> not found")
 
 
 class ResourceTag(SourceTag):
-    type: cfg.cats.Compiler = None
+    type: cfg.Compiler | None = None
 
     @computed_field
     @property
