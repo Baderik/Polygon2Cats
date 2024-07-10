@@ -1,44 +1,49 @@
 from pathlib import Path
-from pydantic import BaseModel, AliasGenerator, AliasChoices, computed_field, field_validator
-
+from dataclasses import dataclass, field as dtField
 import config as cfg
-
 
 __all__ = ["PolygonTag", "NameTag", "TexTag", "StatementTag", "TutorialTag", "TestTag", "GroupTag",
            "TestSetTag", "JudgingTag", "SourceTag", "ResourceTag", "ExecutableTag", "CheckerTag",
            "InteractorTag", "ValidatorTag", "SolutionTag", "Tag"]
 
 
-def _hyphenize(field: str):
-    return AliasChoices(field, field.replace("_", "-"))
+# TODO: Add types validation
 
 
-class PolygonTag(BaseModel):
-    class Config:
-        alias_generator = AliasGenerator(None, _hyphenize, None)
+@dataclass
+class PolygonTag:
+    pass
 
 
+@dataclass
 class NameTag(PolygonTag):
     language: str
     value: str
 
 
+@dataclass
 class TexTag(PolygonTag):
-    charset: str = None
     language: str
-    mathjax: str = None
     path: Path
     type: str
+    charset: str = None
+    mathjax: str = None
+
+    def __post_init__(self):
+        self.path = Path(self.path)
 
 
+@dataclass
 class StatementTag(TexTag):
     pass
 
 
+@dataclass
 class TutorialTag(TexTag):
     pass
 
 
+@dataclass
 class TestTag(PolygonTag):
     method: str
     sample: bool = False
@@ -46,43 +51,40 @@ class TestTag(PolygonTag):
     points: int = None
     description: str = None
     group: str = None
+    generator: str = dtField(init=False)
+    params: str = dtField(init=False)
+    is_generated: bool = dtField(init=False)
 
-    @computed_field
-    @property
-    def generator(self) -> str:
-        return self.cmd.split()[0]
-
-    @computed_field
-    @property
-    def params(self) -> str:
-        return " ".join(self.cmd.split()[1:])
-
-    @computed_field
-    @property
-    def is_generated(self) -> bool:
-        return self.method == "generated"
+    def __post_init__(self):
+        self.sample = self.sample == "true"
+        self.generator = self.cmd.split()[0] if self.cmd else None
+        self.params = " ".join(self.cmd.split()[1:]) if self.cmd else None
+        self.is_generated = self.method == "generated"
 
 
+@dataclass
 class GroupTag(PolygonTag):
     feedback_policy: str
     name: str
-    points: int = None
     points_policy: str
     dependencies: list[str]
+    points: int = None
 
 
+@dataclass
 class TestSetTag(PolygonTag):
     name: str
     time_limit: int
     memory_limit: int
     test_count: int
     input_path_pattern: str
-    output_path_pattern: str = None
     answer_path_pattern: str
-    tests: list[TestTag] = []
-    groups: list[GroupTag] = []
+    output_path_pattern: str = None
+    tests: list[TestTag] = dtField(default_factory=list)
+    groups: list[GroupTag] = dtField(default_factory=list)
 
 
+@dataclass
 class JudgingTag(PolygonTag):
     cpu_name: str
     cpu_speed: int
@@ -92,50 +94,57 @@ class JudgingTag(PolygonTag):
     test_sets: list[TestSetTag]
 
 
+@dataclass
 class SourceTag(PolygonTag):
     path: Path
-    type: cfg.Compiler | None
+    type: cfg.Compiler
 
-    @field_validator("type", mode="before")
-    def choose_compiler(cls, value: str) -> cfg.Compiler:
-        if compiler := cfg.compilers4languages.get(value.lower()):
-            return compiler
-        print(f"WARNING: compiler for type <{value}> not found")
+    def __post_init__(self):
+        self.path = Path(self.path)
+        if self.type is None:
+            pass
+        elif compiler := cfg.compilers4languages.get(self.type.lower()):
+            self.type = compiler
+        else:
+            print(f"WARNING: compiler for type <{self.type}> not found")
 
 
+@dataclass
 class ResourceTag(SourceTag):
     type: cfg.Compiler | None = None
+    is_picture: bool = dtField(init=False)
 
-    @computed_field
-    @property
-    def is_picture(self) -> bool:
-        return (self.path.suffix.lower() in
-                {".img", ".png", ".jpeg", ".jpg", ".gif", ".svg", ".webp"})
+    def __post_init__(self):
+        super().__post_init__()
+        self.is_picture = (self.path.suffix.lower() in
+                           {".img", ".png", ".jpeg", ".jpg", ".gif", ".svg", ".webp"})
 
 
+@dataclass
 class ExecutableTag(SourceTag):
     pass
 
 
+@dataclass
 class CheckerTag(SourceTag):
     checkerType: str
 
 
+@dataclass
 class InteractorTag(SourceTag):
     pass
 
 
+@dataclass
 class ValidatorTag(SourceTag):
     pass
 
 
+@dataclass
 class SolutionTag(SourceTag):
     tag: str
 
 
+@dataclass
 class Tag(PolygonTag):
     value: str
-
-
-if __name__ == '__main__':
-    print(ResourceTag(**{'path': 'files/check.cpp'}))

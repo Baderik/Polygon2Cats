@@ -7,7 +7,7 @@ import config as cfg
 from parser.problem import Problem
 from parser.services import get_properties
 
-from writer.xml import CatsXml
+from writer.xmler import CatsXml
 from writer.utils import *
 from writer.files import Copier
 
@@ -19,7 +19,7 @@ else:
 if not file_path.exists():
     raise AttributeError(f"Path `{file_path}` doesn't exist")
 
-logging.root.setLevel(logging.DEBUG)
+logging.root.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s: %(levelname)s] %(message)s'))
 logging.root.addHandler(handler)

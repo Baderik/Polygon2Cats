@@ -1,4 +1,4 @@
-from lxml import etree
+import xml.etree.ElementTree as ET
 
 from pathlib import Path
 import typing
@@ -7,37 +7,35 @@ from writer.utils import *
 import config as cfg
 
 if typing.TYPE_CHECKING:
-    from lxml.etree import _Element
     from parser.problem import Problem
     from parser.statement import StatementProperties
     from parser.models import *
-
 
 __all__ = ["CatsXml"]
 
 
 class CatsBaseXml:
     def __init__(self, version: str = "1.11"):
-        self.cats = etree.Element('CATS', {"version": version})
-        self.problem = etree.SubElement(self.cats, "Problem")
+        self.cats = ET.Element("CATS", {"version": version})
+        self.problem = ET.SubElement(self.cats, "Problem")
         self.names = set()
         self.run = None
 
-    def _proc_name(self, name: str):
+    def _proc_name(self, name: str) -> None:
         if name in self.names:
             raise AttributeError(f"Name({name}) of tag must be unique.")
         self.names.add(name)
 
-    def _set_problem(self, title: str = None, tlimit: int = None, mlimit: str = None,
+    def _set_problem(self, title: str = None, tLimit: int = None, mLimit: str = None,
                      inputFile: str = None, outputFile: str = None, lang: str = None,
-                     wlimit: str = None, author: str = None, difficulty: int = None,
+                     wLimit: str = None, author: str = None, difficulty: int = None,
                      stdChecker: str = None, maxPoints: int = None,
                      saveInputPrefix: str = None, saveOutputPrefix: str = None,
-                     saveAnswerPrefix: str = None) -> "_Element":
+                     saveAnswerPrefix: str = None) -> ET.Element:
         attrib = {
             "title": title, "lang": lang,
-            "tlimit": None if tlimit is None else str(tlimit),
-            "mlimit": mlimit, "wlimit": wlimit,
+            "tlimit": None if tLimit is None else str(tLimit),
+            "mlimit": mLimit, "wlimit": wLimit,
             "author": author,
             "inputFile": inputFile, "outputFile": outputFile,
             "difficulty": None if difficulty is None else str(difficulty),
@@ -47,16 +45,18 @@ class CatsBaseXml:
             "saveOutputPrefix": saveOutputPrefix,
             "saveAnswerPrefix": saveAnswerPrefix
         }
-        self.problem.attrib.update({k: (el if el else self.problem.attrib[k]) for k, el in attrib.items() if el or self.problem.attrib.get(k)})
+        self.problem.attrib.update({k: (el if el else self.problem.attrib[k])
+                                    for k, el in attrib.items()
+                                    if el or self.problem.attrib.get(k)})
         return self.problem
 
-    def _add_text_tag(self, tag: str, data: list[str], lang: str = None) -> "_Element":
+    def _add_text_tag(self, tag: str, data: list[str], lang: str = None) -> ET.Element:
         attrib = {"cats_if": f"lang={lang}"} if lang else {}
-        root_el = etree.SubElement(self.problem, tag, attrib)
+        root_el = ET.SubElement(self.problem, tag, attrib)
         _add_text(root_el, data)
         return root_el
 
-    def _add_import(self, guid: str, type_import: str = None, name: str = None) -> "_Element":
+    def _add_import(self, guid: str, type_import: str = None, name: str = None) -> ET.Element:
         """Add a import tag formatted CATS xml."""
         attrib = {"guid": guid}
         if type_import:
@@ -64,31 +64,31 @@ class CatsBaseXml:
         if name:
             attrib["name"] = name
             self._proc_name(name)
-        return etree.SubElement(self.problem, "Import", attrib)
+        return ET.SubElement(self.problem, "Import", attrib)
 
     def _add_file(self, tag: str, name: str, path: Path,
-                  compiler: "cfg.Compiler" = None, **kwargs) -> "_Element":
+                  compiler: "cfg.Compiler" = None, **kwargs) -> ET.Element:
         if compiler:
             kwargs["de_code"] = str(compiler.value)
         kwargs["name"] = name
         kwargs["src"] = path.as_posix()
         self._proc_name(name)
-        return etree.SubElement(self.problem, tag, attrib=kwargs)
+        return ET.SubElement(self.problem, tag, attrib=kwargs)
 
-    def _set_run(self, method: str) -> "_Element":
-        self.run = etree.SubElement(self.problem, "Run", {"method": method})
+    def _set_run(self, method: str) -> ET.Element:
+        self.run = ET.SubElement(self.problem, "Run", {"method": method})
         return self.run
 
-    def _add_test(self, in_kwargs: dict = None, out_kwargs: dict = None, **kwargs) -> "_Element":
+    def _add_test(self, in_kwargs: dict = None, out_kwargs: dict = None, **kwargs) -> ET.Element:
         if out_kwargs is None:
             out_kwargs = {}
         if in_kwargs is None:
             in_kwargs = {}
-        test = etree.SubElement(self.problem, "Test", attrib=kwargs)
+        test = ET.SubElement(self.problem, "Test", attrib=kwargs)
         if in_kwargs:
-            etree.SubElement(test, "In", attrib=in_kwargs)
+            ET.SubElement(test, "In", attrib=in_kwargs)
         if out_kwargs:
-            etree.SubElement(test, "Out", attrib=out_kwargs)
+            ET.SubElement(test, "Out", attrib=out_kwargs)
         return test
 
 
@@ -100,14 +100,14 @@ class CatsXml(CatsBaseXml):
         self.checker = None
         self.interactor = None
 
-    def set_title(self, problem: "Problem", properties: "StatementProperties") -> "_Element":
+    def set_title(self, problem: "Problem", properties: "StatementProperties") -> ET.Element:
         name = choose_name(problem.names)
         test_set = choose_testset(problem.judging.test_sets)
         return self._set_problem(
             title=name.value,
             lang=names2languages(problem.names),
-            tlimit=test_set.time_limit // 1000,
-            mlimit=str(test_set.memory_limit) + "B",
+            tLimit=int(test_set.time_limit) // 1000,
+            mLimit=str(test_set.memory_limit) + "B",
             author=properties.authorName,
             inputFile=problem.judging.input_file,
             outputFile=problem.judging.output_file,
@@ -143,19 +143,17 @@ class CatsXml(CatsBaseXml):
             attrib = {"rank": cats_rank(samples_count)}
             if lang_if:
                 attrib["cats_if"] = f"lang={lang_if}"
-            samp = etree.SubElement(self.problem, "Sample", attrib)
-            etree.SubElement(samp, "SampleIn",
-                             {"src": local_in.as_posix()})
-            etree.SubElement(samp, "SampleOut",
-                             {"src": local_ans.as_posix()})
+            samp = ET.SubElement(self.problem, "Sample", attrib)
+            ET.SubElement(samp, "SampleIn", {"src": local_in.as_posix()})
+            ET.SubElement(samp, "SampleOut", {"src": local_ans.as_posix()})
 
         def _with_txt(rank: int, inp: str, out: str, lang_if: str = None):
             attrib = {"rank": str(rank)}
             if lang_if:
                 attrib["cats_if"] = f"lang={lang_if}"
-            samp = etree.SubElement(self.problem, "Sample", attrib)
-            etree.SubElement(samp, "SampleIn").text = inp
-            etree.SubElement(samp, "SampleOut").text = out
+            samp = ET.SubElement(self.problem, "Sample", attrib)
+            ET.SubElement(samp, "SampleIn").text = inp
+            ET.SubElement(samp, "SampleOut").text = out
 
         lang = cats_lang(properties.language)
         if use_file:
@@ -184,7 +182,7 @@ class CatsXml(CatsBaseXml):
         self.interactor = self._add_file("Interactor", name,
                                          interactor.path, interactor.type, **kwargs)
 
-    def add_generator(self, generator: "ExecutableTag", **kwargs) -> "_Element":
+    def add_generator(self, generator: "ExecutableTag", **kwargs) -> ET.Element:
         """Add Generator tag to cats xml."""
         if "name" not in kwargs:
             kwargs["name"] = file_name(generator.path)
@@ -208,7 +206,7 @@ class CatsXml(CatsBaseXml):
                                    sol.path,
                                    compiler=sol.type)
 
-    def add_picture(self, picture: "ResourceTag", **kwargs) -> "_Element":
+    def add_picture(self, picture: "ResourceTag", **kwargs) -> ET.Element:
         """Add Picture tag to cats xml."""
         if "name" not in kwargs:
             kwargs["name"] = picture.path.name
@@ -216,7 +214,7 @@ class CatsXml(CatsBaseXml):
                               path=picture.path,
                               compiler=picture.type, **kwargs)
 
-    def add_attachment(self, attachment: "ResourceTag", **kwargs) -> "_Element":
+    def add_attachment(self, attachment: "ResourceTag", **kwargs) -> ET.Element:
         """Add Attachment tag to cats xml."""
         if "name" not in kwargs:
             kwargs["name"] = attachment.path.name
@@ -224,11 +222,11 @@ class CatsXml(CatsBaseXml):
                               path=attachment.path,
                               compiler=attachment.type, **kwargs)
 
-    def add_all_test_out(self, test_set: "TestSetTag") -> "_Element":
+    def add_all_test_out(self, test_set: "TestSetTag") -> ET.Element:
         """Add Test Set tag to cats xml."""
-        return self._add_test(out_kwargs={"use": "main"}, rank=cats_rank(test_set.test_count))
+        return self._add_test(out_kwargs={"use": "main"}, rank=cats_rank(int(test_set.test_count)))
 
-    def add_test_in(self, rank: int, test: "TestTag", test_path: Path) -> "_Element":
+    def add_test_in(self, rank: int, test: "TestTag", test_path: Path) -> ET.Element:
         """Add Test and Test/<In> to cats xml."""
         match test.method:
             case "generated":
@@ -238,31 +236,29 @@ class CatsXml(CatsBaseXml):
                 return self._add_test(rank=str(rank), in_kwargs=attribs)
             case "manual":
                 attribs = {"src": (test_path / str(rank)).as_posix()}
-                if test.points:
+                if test.points is not None:
                     attribs["points"] = str(test.points)
                 return self._add_test(rank=str(rank), in_kwargs=attribs)
             case _:
                 raise ValueError(f"Test tag has not processed method: <{test.method}>")
 
-    def add_group(self, group: "GroupTag", tests: str) -> "_Element":
+    def add_group(self, group: "GroupTag", tests: str) -> ET.Element:
         """Add <Testset> to cats xml."""
         attrib = {"name": group.name, "tests": tests}
         if group.points is not None:
             attrib["points"] = str(group.points)
         if group.dependencies:
             attrib["dependencies"] = ",".join(group.dependencies)
-        return etree.SubElement(self.problem, "Testset", attrib=attrib)
+        return ET.SubElement(self.problem, "Testset", attrib=attrib)
 
     def add_label(self, version: str = "0.2") -> None:
-        self.cats.append(etree.Comment(f"This packet auto-generated by Baderik v{version}"))
-        self.cats.append(etree.Comment(f"https://github.com/Baderik/polygon2cats"))
+        self.cats.append(ET.Comment(f"This packet auto-generated by Baderik v{version}"))
+        self.cats.append(ET.Comment(f"https://github.com/Baderik/polygon2cats"))
 
     def save(self, path: Path) -> None:
         with open(path, "wb") as out:
-            out.write(etree.tostring(self.cats,
-                                     pretty_print=True,
-                                     xml_declaration=True,
-                                     encoding="UTF-8"))
+            ET.indent(self.cats)
+            out.write(ET.tostring(self.cats, encoding="utf-8"))
 
     def add_resources(self, resources: list["ResourceTag"]) -> None:
         for res in resources:
@@ -283,15 +279,15 @@ class CatsXml(CatsBaseXml):
                            compiler=module.type)
 
 
-def _add_text(root: "_Element", data: list[str], tag: str = "p") -> None:
+def _add_text(root: ET.Element, data: list[str], tag: str = "p") -> None:
     for txt in data:
-        etree.SubElement(root, tag).text = txt
+        ET.SubElement(root, tag).text = txt
 
 
-def _add_heading(root: "_Element", txt: str, tag: str = "h3") -> None:
-    etree.SubElement(root, tag).text = txt
+def _add_heading(root: ET.Element, txt: str, tag: str = "h3") -> None:
+    ET.SubElement(root, tag).text = txt
 
 
-def _add_txt_block(root: "_Element", heading: str, data: list[str]) -> None:
+def _add_txt_block(root: ET.Element, heading: str, data: list[str]) -> None:
     _add_heading(root, heading)
     _add_text(root, data)

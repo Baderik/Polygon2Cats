@@ -7,22 +7,19 @@ def logged(cls):
     cls.logger = logging.getLogger(cls.__name__)
     return cls
 
-class classproperty(object):
+
+class classproperty:
     def __init__(self, f):
         self.f = f
+
     def __get__(self, obj, owner):
         return self.f(owner)
 
 
 class Logged:
     _logger = None
-    # def __new__(cls, *args, **kwargs):
-    #     instance = super().__new__(cls)
-    #     instance.logger = logging.getLogger(cls.__name__)
-    #     return instance
 
     @classproperty
-    # @classmethod
     def logger(cls):
         if cls._logger is None:
             cls._logger = logging.getLogger(cls.__name__)

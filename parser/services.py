@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 from parser.statement import from_file_properties
 
-__all__ = ["get_properties"]
+__all__ = ["get_properties", "pre_attrib"]
 
 
 def get_properties(problem: "Problem") -> list["StatementProperties"]:
@@ -14,3 +14,7 @@ def get_properties(problem: "Problem") -> list["StatementProperties"]:
         statement_tag.path.parent / "problem-properties.json",
         statement_tag.charset, root_dir=problem.path.parent)
             for statement_tag in problem.statements if statement_tag.type == "application/x-tex"]
+
+
+def pre_attrib(kwargs):
+    return {key.replace("-", "_"): value for key, value in kwargs.items()}

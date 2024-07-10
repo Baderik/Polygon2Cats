@@ -2,12 +2,12 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from parser.models import *
+from parser.services import pre_attrib
 from core import *
 
 __all__ = ["Problem"]
 
 
-# @logged
 class _Parser(Logged):
     @classmethod
     def names(cls, names_node: ET.Element) -> list[NameTag]:
@@ -60,13 +60,13 @@ class _Parser(Logged):
                 case "groups":
                     kwargs["groups"] = cls.groups(el)
 
-        return TestSetTag(**test_set_node.attrib, **kwargs)
+        return TestSetTag(**test_set_node.attrib, **pre_attrib(kwargs))
 
     @classmethod
     def judging(cls, judging_node: ET.Element) -> JudgingTag:
         """Parse <judging> node from problem.xml"""
         test_sets = list(map(cls.test_set, judging_node))
-        return JudgingTag(**judging_node.attrib, test_sets=test_sets)
+        return JudgingTag(**pre_attrib(judging_node.attrib), test_sets=test_sets)
 
     @classmethod
     def resources(cls, resources_node: ET.Element) -> list[ResourceTag]:
@@ -160,15 +160,14 @@ class _Parser(Logged):
         return [Tag(**el.attrib) for el in tags_node]
 
 
-# @logged
 class Problem(Logged):
     def __init__(self, problem_path: Path):
         super().__init__()
         if not problem_path.is_file() or not problem_path.with_suffix(".xml"):
             raise ValueError("Path of problem.xml must be .xml file, but found:", problem_path)
-        self.tree = ET.parse(problem_path)
+        self._tree = ET.parse(problem_path)
         self.logger.debug(f"problem.xml is parsed ({problem_path})")
-        self._problem = self.tree.getroot()
+        self._problem = self._tree.getroot()
         self._path = problem_path if type(problem_path) is Path else Path(problem_path)
         self._names = self._statements = self._tutorials = self._judging = self._resources =\
             self._executables = self._checker = self._interactor = self._validators =\
@@ -176,6 +175,9 @@ class Problem(Logged):
         self._parse()
 
     def _parse(self):
+        """
+        Iterate over the problem.xml tags and parse all required tags.
+        """
         for el in self.problem:
             match el.tag:
                 case "names":
