@@ -1,10 +1,16 @@
 from enum import Enum
 from pathlib import Path
+import logging
 
-result_dir = Path("cats/")
-result_dir.mkdir(parents=True, exist_ok=True)
-unpack_dir = Path("polygon/")
+project_dir = Path(__file__).parent
+
+result_dir = project_dir / Path("cats/")
+unpack_dir = project_dir / Path("polygon/")
+search_dir = (Path(""), project_dir, project_dir / "polygon")
 result_xml = Path("problem.xml")
+logging.root.setLevel(logging.INFO)
+
+result_dir.mkdir(parents=True, exist_ok=True)
 
 
 class Compiler(Enum):

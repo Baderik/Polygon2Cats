@@ -14,17 +14,23 @@ from writer.files import Copier
 if len(argv) > 1:
     file_path = Path(argv[1])
 else:
-    file_path = Path(input("Please, Enter path to polygon package dir or zip"))
+    file_path = Path(input("Please, Enter path to polygon package dir or zip\n"))
 
-if not file_path.exists():
-    raise AttributeError(f"Path `{file_path}` doesn't exist")
-
-logging.root.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s: %(levelname)s] %(message)s'))
 logging.root.addHandler(handler)
 
 logger = logging.getLogger("main")
+
+for fp in map(lambda el: el / file_path, cfg.search_dir):
+    if fp.exists():
+        file_path = fp
+        logger.info(f"Path found: {file_path}")
+        break
+else:
+    raise AttributeError(f"Path `{file_path}` doesn't exist")
+
+
 logger.info(f"Started processing polygon package ({file_path})")
 was_unpacked = False
 original_file_path = file_path
@@ -129,7 +135,6 @@ logger.debug("Added comments to xml")
 if was_unpacked:
     rmtree(file_path)
     logger.info("Unpacked dir deleted")
-
 result_path = cop.result / cfg.result_xml
 cats.save(result_path)
 logger.info(f"INFO: Finished processing polygon package. Save to {result_path}")
