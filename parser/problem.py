@@ -27,7 +27,7 @@ class _Parser(Logged):
     @classmethod
     def tests(cls, tests_node: ET.Element) -> list[TestTag]:
         """Parse judging/testset/<tests> node from problem.xml"""
-        return [TestTag(**tests_node[i].attrib) for i in range(len(tests_node))]
+        return [TestTag(**pre_attrib(tests_node[i].attrib)) for i in range(len(tests_node))]
 
     @classmethod
     def groups(cls, groups_node: ET.Element) -> list[GroupTag]:

@@ -45,9 +45,11 @@ class CatsBaseXml:
             "saveOutputPrefix": saveOutputPrefix,
             "saveAnswerPrefix": saveAnswerPrefix
         }
-        self.problem.attrib.update({k: (el if el else self.problem.attrib[k])
-                                    for k, el in attrib.items()
-                                    if el or self.problem.attrib.get(k)})
+
+        attrib = {k: (el if el else self.problem.attrib.get(k))
+                  for k, el in attrib.items()}
+        self.problem.attrib.update({k: el for k, el in attrib.items() if el})
+
         return self.problem
 
     def _add_text_tag(self, tag: str, data: list[str], lang: str = None) -> ET.Element:
@@ -109,8 +111,12 @@ class CatsXml(CatsBaseXml):
             tLimit=int(test_set.time_limit) // 1000,
             mLimit=str(test_set.memory_limit) + "B",
             author=properties.authorName,
-            inputFile=problem.judging.input_file,
-            outputFile=problem.judging.output_file,
+            inputFile=problem.judging.input_file
+            if problem.judging.input_file
+            else f"*{properties.inputFile.upper()}",
+            outputFile=problem.judging.input_file
+            if problem.judging.output_file
+            else f"*{properties.outputFile.upper()}",
             saveInputPrefix=cfg.Properties.saveInputPrefix.value,
             saveOutputPrefix=cfg.Properties.saveOutputPrefix.value,
             saveAnswerPrefix=cfg.Properties.saveAnswerPrefix.value
@@ -235,7 +241,7 @@ class CatsXml(CatsBaseXml):
                     attribs["points"] = str(test.points)
                 return self._add_test(rank=str(rank), in_kwargs=attribs)
             case "manual":
-                attribs = {"src": (test_path / str(rank)).as_posix()}
+                attribs = {"src": (test_path / f"{rank:0>2}").as_posix()}
                 if test.points is not None:
                     attribs["points"] = str(test.points)
                 return self._add_test(rank=str(rank), in_kwargs=attribs)
@@ -258,7 +264,7 @@ class CatsXml(CatsBaseXml):
     def save(self, path: Path) -> None:
         with open(path, "wb") as out:
             ET.indent(self.cats)
-            out.write(ET.tostring(self.cats, encoding="utf-8"))
+            out.write(ET.tostring(self.cats, encoding="utf-8", xml_declaration=True))
 
     def add_resources(self, resources: list["ResourceTag"]) -> None:
         for res in resources:

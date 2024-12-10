@@ -48,6 +48,7 @@ problem = Problem(file_path / "problem.xml")
 logger.debug("Parsed polygon/|problem.xml| ")
 
 statements_properties = get_properties(problem)
+# print(statements_properties)
 logger.debug("Finished parse all polygon/.../|problem-properties.json|")
 
 logger.info("Started to create cats.xml")

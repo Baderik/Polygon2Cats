@@ -51,6 +51,7 @@ class TestTag(PolygonTag):
     points: int = None
     description: str = None
     group: str = None
+    from_file: str = None
     generator: str = dtField(init=False)
     params: str = dtField(init=False)
     is_generated: bool = dtField(init=False)
@@ -107,6 +108,7 @@ class SourceTag(PolygonTag):
             self.type = compiler
         else:
             print(f"WARNING: compiler for type <{self.type}> not found")
+            self.type = None
 
 
 @dataclass
